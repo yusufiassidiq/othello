@@ -55,8 +55,11 @@ class GameController extends Controller
         $this->setCoords();
         $this->setTurn();
 
-        //Do the turn
-        $this->doTurn();
+        //check whether player pass the turn or not
+        if(!(isset($_GET['isPass']))){
+            //Do the turn if player didn't pass his turn
+            $this->doTurn();
+        }
 
         //Recheck and do the clean up board
         $this->doCleanup();
