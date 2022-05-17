@@ -71,6 +71,7 @@ class GameController extends Controller
         $boardContentAfterTurn = $this->_boardContentAfterTurn;
         $countCoinFlippid = $this->_coinsFlipped;
 
+        
         //check is the player pass the turn
         $isPass = $this->isPass();
 
