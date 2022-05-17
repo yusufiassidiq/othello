@@ -7,7 +7,6 @@ use Illuminate\Http\Request;
 class GameController extends Controller
 {
     //Define all the required variables
-    
     //Size of grid box
     private $_gridSize = 8;
 
