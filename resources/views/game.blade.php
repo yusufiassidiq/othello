@@ -36,6 +36,8 @@
         </script>
     </head>
     <body>
+        <!-- <?php print_r($suggestion)?> -->
+        {{$suggestion}}
         <div class="flex-center position-ref full-height">
             <div class="content">
                 <div class="" style="">

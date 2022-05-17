@@ -16,6 +16,9 @@ class GameController extends Controller
     //Board in array form after turn
     private $_boardContentAfterTurn;
 
+    //Board in array after turn for suggestion
+    private $_boardAfterTurnSuggest;
+
     //Coordinate for X
     private $_x = false;
 
@@ -25,8 +28,14 @@ class GameController extends Controller
     //Player who has just played this move
     private $_turnInPlay;
 
+    //Player who turn next
+    private $_turnNext;
+
     //Total the coin when flipped
     private $_coinsFlipped = 0;
+
+    //Data coordinate suggestion
+    private $_coordSuggestedMove = [];
 
     public function welcomePage(Request $request)
     {
@@ -73,12 +82,17 @@ class GameController extends Controller
         //check is the player pass the turn
         $isPass = $this->isPass();
 
+        //Fill board after player turn suggestion to array
+        $this->getBoardAfterTurnSuggest();
+
         //calculate the score and game status
         $calculateScore = $this->calculateScore();
         $gameStatus = $this->gameStatus();
         $getFullName = $this->getFullName($turnInPlay);
 
-        return view('game',compact('gridSize','boardContent','turnInPlay','boardContentAfterTurn','calculateScore','gameStatus','getFullName','countCoinFlippid','isPass'));
+        $suggestion = $this->suggestion();
+        return $this->_coordSuggestedMove;
+        return view('game',compact('gridSize','boardContent','turnInPlay','boardContentAfterTurn','calculateScore','gameStatus','getFullName','countCoinFlippid','isPass','suggestion'));
     }
 
     //Set the board in string form
@@ -121,6 +135,11 @@ class GameController extends Controller
         $this->_turnInPlay = ! isset($_GET['turn']) || $_GET['turn'] == 'b'
             ? 'b'
             : 'w';
+
+        $this->_turnNext = ! isset($_GET['turn']) || $_GET['turn'] == 'b'
+        ? 'w'
+        : 'b';
+
     }
 
     //Check and set the coordinate
@@ -295,5 +314,88 @@ class GameController extends Controller
         if(isset($_GET['isPass'])){
             return $_GET['isPass'];
         }
+    }
+
+    //Make an array form from string board after last player do the turn
+    public function getBoardAfterTurnSuggest()
+    {
+        $boardAfterTurnSuggest = $this->_boardContentAfterTurn;
+        // Split string into valid X coord lengths
+        $boardAfterTurnSuggest = str_split($boardAfterTurnSuggest, $this->_gridSize);
+        
+        // Loop over each Y coord...
+        foreach ($boardAfterTurnSuggest as $index => $line) {
+            // ... and insert each X coord
+            $boardAfterTurnSuggest[$index] = str_split($boardAfterTurnSuggest[$index], 1);
+        }
+        // assign to variable globally
+        $this->_boardAfterTurnSuggest = $boardAfterTurnSuggest;
+    }
+
+    //function for suggested move to player turn
+    public function suggestion()
+    {
+        //loop as many gridsize
+        for ($i=0; $i < $this->_gridSize; $i++) { 
+            for ($j=0; $j < $this->_gridSize; $j++) { 
+            //call function for check every grid in every side
+            $this->checkCoinAroundForSuggestion($i, $j, 0, -1); //Top
+            $this->checkCoinAroundForSuggestion($i, $j, 1, -1); //Top Right
+            $this->checkCoinAroundForSuggestion($i, $j, 1, 0); //Right
+            $this->checkCoinAroundForSuggestion($i, $j, 1, 1); //Bottom Right
+            $this->checkCoinAroundForSuggestion($i, $j, 0, 1); //Bottom
+            $this->checkCoinAroundForSuggestion($i, $j, -1, 1); //Bottom Left
+            $this->checkCoinAroundForSuggestion($i, $j, -1, 0); //Left
+            $this->checkCoinAroundForSuggestion($i, $j, -1, -1); //Left Top
+            }
+        }
+    }
+
+    //function for check the coordinate for suggestion move
+    public function checkCoinAroundForSuggestion($xCoord, $yCoord ,$xDiff, $yDiff)
+    {
+        // Set variables
+        $x = $xCoord;
+        $y = $yCoord;
+        $continue = true;
+
+        $boardAfterTurnSuggest = $this->_boardAfterTurnSuggest;
+        
+        // Begin the loop
+        do {
+            // Work out the new coords to test
+            $x += $xDiff;
+            $y += $yDiff; //5-1=4 //4-1=3
+            
+            // What is in the next position? and check the edge
+            $next = isset($boardAfterTurnSuggest[$y][$x])
+                ? $boardAfterTurnSuggest[$y][$x] // $_boardContent[4][4] / white // $_boardContent[4][3] / black
+                : 'e'; // Edge
+
+            // Have we hit an edge or an empty position?
+            if ($next == 'e' || $next == '-') {
+                $continue = false;
+            }
+            
+            // Have we reached our own coin colour?
+            else if ($next == $this->_turnNext) { //white!=black (false) // black==black (true) **ket: $this->_turnNext in first iteration = black
+                // We are currently at our own coin, move back one so we are at our
+                // .. last free (potentially) coin.
+                if ($xDiff > 0) { $x--; } else if ($xDiff < 0) { $x++; } //x = 4
+                if ($yDiff > 0) { $y--; } else if ($yDiff < 0) { $y++; } //y = 3++ = 4
+                // Are we where we started?
+                while ($x != $xCoord || $y != $yCoord) { // {4 != 4 (false) || 4 != 5 (true)} = true //{4 != 4 (false) || 5 != 5 (false)} = false
+                    // Push to array the coordinate that can flip enemy coin
+                    array_push($this->_coordSuggestedMove , $xCoord.':'.$yCoord);
+                    
+                    // Move back one coord to begin another replacement
+                    if ($xDiff > 0) { $x--; } else if ($xDiff < 0) { $x++; } //x = 4
+                    if ($yDiff > 0) { $y--; } else if ($yDiff < 0) { $y++; } //y = 5 //goback loop to while condition
+                }
+                
+                // We have converted all of the possible coins, exit the traverse
+                $continue = false;
+            }
+        } while ($continue);
     }
 }
