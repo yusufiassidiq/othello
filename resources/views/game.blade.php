@@ -48,24 +48,40 @@
                         @for ($x=1;$x<=$gridSize;$x++)
                             <th>
                                 <!-- increment letter -->
-                                <?php echo strtoupper($letter++) ?>
-                                <!-- {{$x-1}} -->
+                                <!-- <?php echo strtoupper($letter++) ?> -->
+                                {{$x-1}}
                             </th>
                         @endfor
                         <!-- loop for second row -->
                         @for ($y=1;$y<=$gridSize;$y++)
                             <tr>
                                 <!-- define var $y in every first column in current row -->
-                                <th><?php echo $y ?></th>
-                                <!-- <th>{{$y-1}}</th> -->
+                                <!-- <th><?php echo $y ?></th> -->
+                                <th>{{$y-1}}</th>
                                 <!-- loop for second column until end in current row -->
                                 @for ($x=1;$x<=$gridSize;$x++)
                                     @if($boardContent[$y-1][$x-1] == 'b')
                                         <td><div style="position:relative;background-color:black;width:50px;height:50px;border-radius:50%;" class="coin-black" alt="B" rel="{{$x-1}}:{{$y-1}}"></div></td>
                                     @elseif($boardContent[$y-1][$x-1] == 'w')
                                         <td><div style="position:relative;background-color:white;width:50px;height:50px;border-radius:50%;" class="coin-white" alt="W" rel="{{$x-1}}:{{$y-1}}"></div></td>
+                                    @elseif($boardContent[$y-1][$x-1] == 'h')
+                                        <td>
+                                            <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
+                                                <div style="position:relative;background-color:transparent;border-color:black;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="H" rel="{{$x-1}}:{{$y-1}}"></div>
+                                            </a>
+                                        </td>
+                                    @elseif($boardContent[$y-1][$x-1] == 'p')
+                                        <td>
+                                            <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
+                                                <div style="position:relative;background-color:transparent;border-color:white;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="P" rel="{{$x-1}}:{{$y-1}}"></div>
+                                            </a>
+                                        </td>
                                     @else
-                                        <td><a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}"><div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div></a></td>
+                                        <td>
+                                            <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
+                                                <div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div>
+                                            </a>
+                                        </td>
                                     @endif
                                 @endfor
                                 
