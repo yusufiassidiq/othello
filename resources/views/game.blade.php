@@ -30,6 +30,8 @@
                 coinsChanged       = new Array;
                 colorCoin          = turnInPlay == 'b'?'black':'white',
                 theOtherColorCoin  = turnInPlay == 'b'?'white':'black',
+                backgroundColor    = turnInPlay == 'b'?'radial-gradient(rgb(51,51,51) 30%, black 70%)':'radial-gradient(white 30%, rgb(204,204,204) 70%)',
+                backgroundColor2   = turnInPlay == 'w'?'radial-gradient(rgb(51,51,51) 30%, black 70%)':'radial-gradient(white 30%, rgb(204,204,204) 70%)',
                 
             // Setup the board
             setBoardContent();
@@ -61,9 +63,9 @@
                                 <!-- loop for second column until end in current row -->
                                 @for ($x=1;$x<=$gridSize;$x++)
                                     @if($boardContent[$y-1][$x-1] == 'b')
-                                        <td><div style="position:relative;background-color:black;width:50px;height:50px;border-radius:50%;" class="coin-black" alt="B" rel="{{$x-1}}:{{$y-1}}"></div></td>
+                                        <td><div style="position:relative;background-image: radial-gradient(rgb(51,51,51) 30%, black 70%);width:50px;height:50px;border-radius:50%;" class="coin-black" alt="B" rel="{{$x-1}}:{{$y-1}}"></div></td>
                                     @elseif($boardContent[$y-1][$x-1] == 'w')
-                                        <td><div style="position:relative;background-color:white;width:50px;height:50px;border-radius:50%;" class="coin-white" alt="W" rel="{{$x-1}}:{{$y-1}}"></div></td>
+                                        <td><div style="position:relative;background-image: radial-gradient(white 30%, rgb(204,204,204) 70%);width:50px;height:50px;border-radius:50%;" class="coin-white" alt="W" rel="{{$x-1}}:{{$y-1}}"></div></td>
                                     @elseif($boardContent[$y-1][$x-1] == 'h')
                                         <td>
                                             <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
@@ -119,7 +121,7 @@
 
                 <!-- Stats and warning condition -->
                 <!-- If there is still coin or empty coin not equal to zero -->
-                @if($calculateScore['empty']!=0 && !($calculateScore['black'] == 0 || $calculateScore['white'] == 0))
+                @if($calculateScore['empty']!=0 && !($calculateScore['black'] == 0 || $calculateScore['white'] == 0) && $totalSuggestedMove != 0)
                     <!-- If black or white coin's goes to zero  -->
                     @if($countCoinFlippid == 0)
                         @if(isset($_GET['x']) && !($isPass))

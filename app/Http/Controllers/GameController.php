@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 class GameController extends Controller
 {
     //Define all the required variables
+    private $_mode = 'pvp';
     //Size of grid box
     private $_gridSize = 8;
 
@@ -40,6 +41,9 @@ class GameController extends Controller
     //The data coordinate the possibility flipped coin while in suggestion
     private $_coordFlippedCoinSuggestedMove = [];
 
+    //Total suggested move
+    private $_totalSuggestedMove;
+
     //Variable for trace while checking suggestion move
     private $_trace = [];
 
@@ -63,6 +67,47 @@ class GameController extends Controller
             $this->_gridSize = $request->session()->get('gridSize', 8);
         }
 
+        if(isset($request->mode)){
+            $this->_mode = $request->mode;
+            $request->session()->put('mode', $request->mode);
+        }else{
+            $this->_mode = $request->session()->get('mode', 'pvp');
+        }
+
+        if($this->_mode == 'pvp'){
+            $pvp = $this->pvp();
+            return view('game',[
+                'boardContent'=>$pvp['boardContent'],
+                'gridSize'=>$pvp['gridSize'],
+                'turnInPlay'=>$pvp['turnInPlay'],
+                'boardContentAfterTurn'=>$pvp['boardContentAfterTurn'],
+                'countCoinFlippid'=>$pvp['countCoinFlippid'],
+                'isPass'=>$pvp['isPass'],
+                'calculateScore'=>$pvp['calculateScore'],
+                'gameStatus'=>$pvp['gameStatus'],
+                'getFullName'=>$pvp['getFullName'],
+                'totalSuggestedMove'=>$pvp['totalSuggestedMove'],
+            ]);
+        }else{
+            $pvai = $this->pvai();
+            return view('game',[
+                'boardContent'=>$pvai['boardContent'],
+                'gridSize'=>$pvai['gridSize'],
+                'turnInPlay'=>$pvai['turnInPlay'],
+                'boardContentAfterTurn'=>$pvai['boardContentAfterTurn'],
+                'countCoinFlippid'=>$pvai['countCoinFlippid'],
+                'isPass'=>$pvai['isPass'],
+                'calculateScore'=>$pvai['calculateScore'],
+                'gameStatus'=>$pvai['gameStatus'],
+                'getFullName'=>$pvai['getFullName'],
+                'totalSuggestedMove'=>$pvai['totalSuggestedMove'],
+            ]);
+        }
+        
+    }
+
+    public function pvp()
+    {
         //Setup the board
         $this->setBoardString();
         $this->setBoardContent();
@@ -79,22 +124,22 @@ class GameController extends Controller
         $this->doCleanup();
         
         //get the variable for the front end
-        $boardContent = $this->_boardContent;
-        $gridSize = $this->_gridSize;
-        $turnInPlay = $this->_turnInPlay;
-        $boardContentAfterTurn = $this->_boardContentAfterTurn;
-        $countCoinFlippid = $this->_coinsFlipped;
+        $pvp['boardContent'] = $this->_boardContent;
+        $pvp['gridSize'] = $this->_gridSize;
+        $pvp['turnInPlay'] = $this->_turnInPlay;
+        $pvp['boardContentAfterTurn'] = $this->_boardContentAfterTurn;
+        $pvp['countCoinFlippid'] = $this->_coinsFlipped;
 
         //check is the player pass the turn
-        $isPass = $this->isPass();
+        $pvp['isPass'] = $this->isPass();
 
         //Fill board after player turn suggestion to array
         $this->getBoardAfterTurnSuggest();
 
         //calculate the score and game status
-        $calculateScore = $this->calculateScore();
-        $gameStatus = $this->gameStatus();
-        $getFullName = $this->getFullName($turnInPlay);
+        $pvp['calculateScore'] = $this->calculateScore();
+        $pvp['gameStatus'] = $this->gameStatus();
+        $pvp['getFullName'] = $this->getFullName($pvp['turnInPlay']);
 
         //Function for suggestion move
         $this->suggestion();
@@ -105,9 +150,60 @@ class GameController extends Controller
 
         //Insert suggested coord to string board
         $this->insertSuggestedMoveToBoard();
-        $boardContent = $this->_boardContent;
+        $pvp['totalSuggestedMove'] = $this->_totalSuggestedMove;
+        $pvp['boardContent'] = $this->_boardContent;
 
-        return view('game',compact('gridSize','boardContent','turnInPlay','boardContentAfterTurn','calculateScore','gameStatus','getFullName','countCoinFlippid','isPass'));
+        return $pvp;
+    }
+
+    public function pvai()
+    {
+        //Setup the board
+        $this->setBoardString();
+        $this->setBoardContent();
+        $this->setCoords();
+        $this->setTurn();
+
+        //check whether player pass the turn or not
+        if(!(isset($_GET['isPass']))){
+            //Do the turn if player didn't pass his turn
+            $this->doTurn();
+        }
+
+        //Recheck and do the clean up board
+        $this->doCleanup();
+        
+        //get the variable for the front end
+        $pvai['boardContent'] = $this->_boardContent;
+        $pvai['gridSize'] = $this->_gridSize;
+        $pvai['turnInPlay'] = $this->_turnInPlay;
+        $pvai['boardContentAfterTurn'] = $this->_boardContentAfterTurn;
+        $pvai['countCoinFlippid'] = $this->_coinsFlipped;
+
+        //check is the player pass the turn
+        $pvai['isPass'] = $this->isPass();
+
+        //Fill board after player turn suggestion to array
+        $this->getBoardAfterTurnSuggest();
+
+        //calculate the score and game status
+        $pvai['calculateScore'] = $this->calculateScore();
+        $pvai['gameStatus'] = $this->gameStatus();
+        $pvai['getFullName'] = $this->getFullName($pvai['turnInPlay']);
+
+        //Function for suggestion move
+        $this->suggestion();
+
+        // return $this->_trace;
+        // return $this->_coordFlippedCoinSuggestedMove;
+        // return $this->_coordSuggestedMove;
+
+        //Insert suggested coord to string board
+        $this->insertSuggestedMoveToBoard();
+        $pvai['totalSuggestedMove'] = $this->_totalSuggestedMove;
+        $pvai['boardContent'] = $this->_boardContent;
+
+        return $pvai;
     }
 
     //Set the board in string form
@@ -441,6 +537,7 @@ class GameController extends Controller
 
         //Remove duplicated suggested coord move
         $this->_coordSuggestedMove = array_unique($this->_coordSuggestedMove);
+        $this->_totalSuggestedMove = count($this->_coordSuggestedMove);
 
         //Merge flag in to the position of the string board
         foreach ($this->_coordSuggestedMove as $key => $value) {

@@ -67,7 +67,7 @@ function checkCoinAround(xDiff, yDiff) {
                 boardContent[yTemp][xTemp] = turnInPlay;
                 
                 // Change the image
-                $("div[rel='"+xTemp+":"+yTemp+"']").removeClass('coin-'+theOtherColorCoin).addClass('coin-'+colorCoin).css('background-color',colorCoin);
+                $("div[rel='"+xTemp+":"+yTemp+"']").removeClass('coin-'+theOtherColorCoin).addClass('coin-'+colorCoin).css('background-image',backgroundColor);
                 
                 // Set which coin we just updated
                 coinsChanged[coinsChanged.length] = [xTemp, yTemp];
@@ -94,7 +94,7 @@ function resetCoins() {
     // Loop over changed coins
     for (var i = 0; i < coinsChangedLength; i++) {
         // Reset coin image
-        $("div[rel='"+coinsChanged[i][0]+":"+coinsChanged[i][1]+"']").removeClass('coin-'+colorCoin).addClass('coin-'+theOtherColorCoin).css('background-color',theOtherColorCoin);
+        $("div[rel='"+coinsChanged[i][0]+":"+coinsChanged[i][1]+"']").removeClass('coin-'+colorCoin).addClass('coin-'+theOtherColorCoin).css('background-image',backgroundColor2);
         
         // Reset the board
         boardContent[coinsChanged[i][1]][coinsChanged[i][0]] = turnNext;
@@ -109,7 +109,7 @@ $(document).ready(function() {
     // Wait for the player to mouseover an empty disc
     $(".coin-empty").hover(function() {
         // Set the coin colour by append new child div
-        $(this).append('<div style="position:relative;background-color:'+colorCoin+';width:50px;height:50px;border-radius:50%;" class="coin-'+colorCoin+'"></div>')
+        $(this).append('<div style="position:relative;background-image:'+backgroundColor+';width:50px;height:50px;border-radius:50%;" class="coin-'+colorCoin+'"></div>')
         // Set the X and Y coords
         coords = $(this).attr("rel");
         coords = coords.split(':');

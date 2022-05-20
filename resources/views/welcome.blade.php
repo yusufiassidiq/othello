@@ -17,8 +17,13 @@
                 <form action="{{route('play-the-game')}}" method="get">
                 <h4>Welcome to the Othello Game</h4>
 
-                <p>How the size of board ?</p>
+                <p>How size of the board ?</p>
                 <input name="gridSize" type="number" placeholder="6, 8 or 10"/>
+                <select name="mode">
+                    <option disabled selected>Select Mode Game</option>
+                    <option value="pvp">Player vs Player</option>
+                    <option value="pvai">Player vs AI</option>
+                </select>
                 <button type="submit">Lets play the game!</button>
                 </form>
             </div>
