@@ -93,15 +93,15 @@
                                         </td>
                                     @else
                                         <td>
-                                        @if($mode == 'pvai' && $turnInPlay == 'w')
-                                            <a style="pointer-events:none" href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
-                                                <div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div>
-                                            </a>
-                                        @else
-                                            <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
-                                                <div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div>
-                                            </a>
-                                        @endif
+                                            @if($mode == 'pvai' && $turnInPlay == 'w')
+                                                <a style="pointer-events:none" href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
+                                                    <div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div>
+                                                </a>
+                                            @else
+                                                <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
+                                                    <div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div>
+                                                </a>
+                                            @endif
                                         </td>
                                     @endif
                                 @endfor
@@ -165,7 +165,8 @@
                         <h3>
                             <div class="error">
                                 <p>Computer have no turn to move</p>
-                                <p><a id="pass-button" href="/game/?isPass=true&x=<?php echo (int)$_GET['x']; ?>&y=<?php echo (int)$_GET['y']; ?>&turn=b&board=<?php echo htmlentities($_GET['board']); ?>">click here</href> to continue your turn</p>
+                                <div class="ai-no-move"></div>
+                                <!-- <p><a id="pass-button" href="/game/?isPass=true&x=<?php echo (int)$_GET['x']; ?>&y=<?php echo (int)$_GET['y']; ?>&turn=b&board=<?php echo htmlentities($_GET['board']); ?>">click here</href> to continue your turn</p> -->
                             </div>
                         </h3>
                     @endif
@@ -184,20 +185,33 @@
     </body>
     <script type="text/javascript">
         $(document).ready(function() {
-            var coinSuggested = []
-            $(".coin-empty-suggest").map(function() {
-                coinSuggested.push($(this).attr('href'));
-                console.log($(this).attr('href'));
-            }).get();
-            const random = Math.floor(Math.random() * coinSuggested.length);
-            console.log(random, coinSuggested[random]);
-            if(mode == 'pvai' && turnInPlay == 'w' && coinSuggested.length > 0){
-                setTimeout(() => {
-                    window.location.href = coinSuggested[random]
-                }, 1000);
+            var coinSuggested = [];
+            var emptyBoard = [];
+            if(mode == 'pvai' && turnInPlay == 'w'){
+                $(".coin-empty-suggest").map(function() {
+                    coinSuggested.push($(this).attr('href'));
+                    // console.log($(this).attr('href'));
+                }).get();
+                $(".coin-empty-href").map(function() {
+                    emptyBoard.push($(this).attr('rel'));
+                    // console.log($(this).attr('href'));
+                }).get();
+                const random = Math.floor(Math.random() * coinSuggested.length);
+                if(coinSuggested.length > 0){
+                    // console.log(random, coinSuggested[random]);
+                    setTimeout(() => {
+                        window.location.href = coinSuggested[random];
+                    }, 1000);
+                }else{
+                    if(emptyBoard.length > 0){
+                        var coord = emptyBoard[0].split(':');
+                        // console.log(coord);
+                        $(".ai-no-move").append('<p><a id="pass-button" href="/game/?isPass=true&x='+coord[0]+'&y='+coord[1]+'&turn=b&board='+boardContentString+'">click here</href> to continue your turn</p>');
+                    }
+                }
             }
-            console.log(mode);
-            console.log(turnInPlay);
+            // console.log(mode);
+            // console.log(turnInPlay);
         })
     </script>
 </html>
