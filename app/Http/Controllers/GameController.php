@@ -42,7 +42,7 @@ class GameController extends Controller
     private $_coordFlippedCoinSuggestedMove = [];
 
     //Total suggested move
-    private $_totalSuggestedMove;
+    private $_totalSuggestedMove = 0;
 
     //Variable for trace while checking suggestion move
     private $_trace = [];
@@ -87,9 +87,11 @@ class GameController extends Controller
                 'gameStatus'=>$pvp['gameStatus'],
                 'getFullName'=>$pvp['getFullName'],
                 'totalSuggestedMove'=>$pvp['totalSuggestedMove'],
+                'mode'=>$this->_mode,
             ]);
         }else{
             $pvai = $this->pvai();
+            // dd($pvai['totalSuggestedMove'],$pvai['totalSuggestedMoveEnemy']);
             return view('game',[
                 'boardContent'=>$pvai['boardContent'],
                 'gridSize'=>$pvai['gridSize'],
@@ -101,6 +103,8 @@ class GameController extends Controller
                 'gameStatus'=>$pvai['gameStatus'],
                 'getFullName'=>$pvai['getFullName'],
                 'totalSuggestedMove'=>$pvai['totalSuggestedMove'],
+                'totalSuggestedMoveEnemy'=>$pvai['totalSuggestedMoveEnemy'],
+                'mode'=>$this->_mode,
             ]);
         }
         
@@ -152,11 +156,72 @@ class GameController extends Controller
         $this->insertSuggestedMoveToBoard();
         $pvp['totalSuggestedMove'] = $this->_totalSuggestedMove;
         $pvp['boardContent'] = $this->_boardContent;
-
+        // dd( $pvp['boardContent']);
         return $pvp;
     }
 
     public function pvai()
+    {
+        //Setup the board
+        $this->setBoardString();
+        $this->setBoardContent();
+        $this->setCoords();
+        $this->setTurn();
+
+        //check whether player pass the turn or not
+        if(!(isset($_GET['isPass']))){
+            //Do the turn if player didn't pass his turn
+            $this->doTurn();
+        }
+
+        //Recheck and do the clean up board
+        $this->doCleanup();
+        
+        //get the variable for the front end
+        $pvai['boardContent'] = $this->_boardContent;
+        $pvai['gridSize'] = $this->_gridSize;
+        $pvai['turnInPlay'] = $this->_turnInPlay;
+        $pvai['boardContentAfterTurn'] = $this->_boardContentAfterTurn;
+        $pvai['countCoinFlippid'] = $this->_coinsFlipped;
+
+        //check is the player pass the turn
+        $pvai['isPass'] = $this->isPass();
+
+        //Fill board after player turn suggestion to array
+        $this->getBoardAfterTurnSuggest();
+
+        //calculate the score and game status
+        $pvai['calculateScore'] = $this->calculateScore();
+        $pvai['gameStatus'] = $this->gameStatus();
+        $pvai['getFullName'] = $this->getFullName($pvai['turnInPlay']);
+
+        //Function for suggestion move
+        $this->suggestion();
+
+        //Insert suggested coord to string board
+        $this->insertSuggestedMoveToBoard();
+        $pvai['totalSuggestedMove'] = $this->_totalSuggestedMove;
+        $pvai['totalSuggestedMoveEnemy'] = 0;
+        //If total suggested move current player == 0, check total suggested move the other player
+        if($pvai['totalSuggestedMove'] == 0){
+            $this->_turnInPlay = $this->_turnInPlay == 'w' ? 'b' : 'w';
+            $this->_coordSuggestedMove = [];
+            $this->suggestion();
+            $enemySuggestedMove = array_unique($this->_coordSuggestedMove);
+            // dd($enemySuggestedMove);
+            if(count($enemySuggestedMove) == 0){
+                $pvai['totalSuggestedMove'] = 0;
+            }else{
+                $pvai['totalSuggestedMoveEnemy'] = count($enemySuggestedMove);
+                $this->_turnInPlay = $this->_turnInPlay == 'w' ? 'w' : 'b';
+            }
+        }
+        $pvai['boardContent'] = $this->_boardContent;
+
+        return $pvai;
+    }
+
+    public function pvaiGAJADI()
     {
         //Setup the board
         $this->setBoardString();
@@ -199,10 +264,36 @@ class GameController extends Controller
         // return $this->_coordSuggestedMove;
 
         //Insert suggested coord to string board
-        $this->insertSuggestedMoveToBoard();
+        $this->insertSuggestedMoveToBoardAI();
+        if($pvai['turnInPlay'] == 'w'){
+            $getBoardAfterTurn = $this->getBoardAfterTurn();
+            $this->_boardContentAfterTurn = $getBoardAfterTurn;
+            
+            // $this->_turnInPlay = 'b';
+            // $this->suggestion();
+            // $this->insertSuggestedMoveToBoardAI();
+            // $getBoardAfterTurn = $this->getBoardAfterTurn();
+            // $this->_boardContentAfterTurn = $getBoardAfterTurn;
+        }
+
         $pvai['totalSuggestedMove'] = $this->_totalSuggestedMove;
         $pvai['boardContent'] = $this->_boardContent;
+        if($pvai['turnInPlay'] == 'w'){
+            $this->_turnInPlay = 'b';
+            $this->_coordSuggestedMove = [];
+            $this->_totalSuggestedMove = 0;
 
+            $this->suggestion();
+            $this->insertSuggestedMoveToBoardAI();
+
+            $getBoardAfterTurn = $this->getBoardAfterTurn();
+            $this->_boardContentAfterTurn = $getBoardAfterTurn;
+
+            // $pvai['totalSuggestedMove'] = $this->_totalSuggestedMove;
+            $pvai['boardContent'] = $this->_boardContent;
+            // $this->_turnInPlay = 'b';
+        }
+        // dd($this->_turnInPlay);
         return $pvai;
     }
 
@@ -554,5 +645,107 @@ class GameController extends Controller
             // ... and insert each X coord
             $this->_boardContent[$index] = str_split($this->_boardContent[$index], 1);
         }
+    }
+
+    //Insert suggested coordinates to string board for frontend
+    public function insertSuggestedMoveToBoardAI()
+    {
+        //Get board after turn
+        $board = $this->_boardContentAfterTurn;
+        
+        //Naming flag for the suggested coin, white = p, black = h
+        $word = $this->_turnInPlay == 'w' ? 'p' : 'h';
+        $wordTurnAI = $this->_turnInPlay == 'w' ? 'w' : 'b';
+
+        //Remove duplicated suggested coord move
+        $this->_coordSuggestedMove = array_unique($this->_coordSuggestedMove);
+        $this->_totalSuggestedMove = count($this->_coordSuggestedMove);
+        $randCoord = $this->_coordSuggestedMove[array_rand($this->_coordSuggestedMove)];
+        // dd($this->_coordSuggestedMove);
+        
+        //Merge flag in to the position of the string board
+        foreach ($this->_coordSuggestedMove as $key => $value) {
+            $coord = explode(':',$value);
+            $coordToBoard = ($coord[1]*$this->_gridSize)+($coord[0]);
+            if($value == $randCoord && $this->_turnInPlay == 'w'){
+                $board = substr_replace($board, $wordTurnAI, $coordToBoard, 1);
+            }else{
+                $board = substr_replace($board, $word, $coordToBoard, 1);
+            }
+        }
+        
+
+        // Split string into valid X coord lengths
+        $this->_boardContent = str_split($board, $this->_gridSize);
+        
+        // Loop over each Y coord...
+        foreach ($this->_boardContent as $index => $line) {
+            // ... and insert each X coord
+            $this->_boardContent[$index] = str_split($this->_boardContent[$index], 1);
+        }
+        $randcoordExplode = explode(':',$randCoord);
+        // dd($randcoordExplode);
+        if ($this->_turnInPlay == 'w'){
+            // dd('w');
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], 0, -1, 'top'); //Top
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], 1, -1, 'top right'); //Top Right
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], 1, 0, 'right'); //Right
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], 1, 1, 'bottom right'); //Bottom Right
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], 0, 1, 'bottom'); //Bottom
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], -1, 1, 'bottom left'); //Bottom Left
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], -1, 0, 'left'); //Left
+            $this->doTurnAI($randcoordExplode[0],$randcoordExplode[1], -1, -1, 'left top'); //Left Top
+            // dd($this->_boardContent, $randCoord);
+        }
+    }
+
+    public function doTurnAI($xCoord, $yCoord ,$xDiff, $yDiff, $position)
+    {
+        // Set variables
+        $x = $xCoord;
+        $y = $yCoord;
+        $continue = true;
+        $ai = 'w';
+        
+        // Begin the loop
+        do {
+            // Work out the new coords to test
+            $x += $xDiff;
+            $y += $yDiff;
+            
+            // What is in the next position? and check the edge
+            $next = isset($this->_boardContent[$y][$x])
+                ? $this->_boardContent[$y][$x]
+                : 'e'; // Edge
+
+            // Have we hit an edge or an empty position?
+            if ($next == 'e' || $next == '-') {
+                $continue = false;
+            }
+            
+            // Have we reached our own coin colour?
+            else if ($next == $ai) {
+                // We are currently at our own coin, move back one so we are at our
+                // .. last free (potentially) coin.
+                if ($xDiff > 0) { $x--; } else if ($xDiff < 0) { $x++; }
+                if ($yDiff > 0) { $y--; } else if ($yDiff < 0) { $y++; }
+                
+                // Are we where we started?
+                while ($x != $xCoord || $y != $yCoord) {
+                    // Change this coin to the player who just moved
+                    $this->_boardContent[$y][$x] = $ai;
+                    
+                    // Set the number of coins this flipped
+                    $this->_coinsFlipped++;
+                    
+                    // Move back one coord to begin another replacement
+                    if ($xDiff > 0) { $x--; } else if ($xDiff < 0) { $x++; }
+                    if ($yDiff > 0) { $y--; } else if ($yDiff < 0) { $y++; }
+                }
+                
+                // We have converted all of the possible coins, exit the traverse
+                $continue = false;
+            }
+        } while ($continue);
     }
 }

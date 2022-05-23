@@ -32,7 +32,7 @@
                 theOtherColorCoin  = turnInPlay == 'b'?'white':'black',
                 backgroundColor    = turnInPlay == 'b'?'radial-gradient(rgb(51,51,51) 30%, black 70%)':'radial-gradient(white 30%, rgb(204,204,204) 70%)',
                 backgroundColor2   = turnInPlay == 'w'?'radial-gradient(rgb(51,51,51) 30%, black 70%)':'radial-gradient(white 30%, rgb(204,204,204) 70%)',
-                
+                mode               = "<?php echo $mode; ?>",
             // Setup the board
             setBoardContent();
         </script>
@@ -40,6 +40,7 @@
     <body>
         <div class="flex-center position-ref full-height">
             <div class="content">
+                <!-- <?php print_r( $boardContent) ?> -->
                 <div class="" style="">
                     <!-- define first letter -->
                     <?php $letter='a' ?>
@@ -68,21 +69,39 @@
                                         <td><div style="position:relative;background-image: radial-gradient(white 30%, rgb(204,204,204) 70%);width:50px;height:50px;border-radius:50%;" class="coin-white" alt="W" rel="{{$x-1}}:{{$y-1}}"></div></td>
                                     @elseif($boardContent[$y-1][$x-1] == 'h')
                                         <td>
-                                            <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
-                                                <div style="position:relative;background-color:transparent;border-color:black;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="H" rel="{{$x-1}}:{{$y-1}}"></div>
-                                            </a>
+                                            @if($mode == 'pvai' && $turnInPlay == 'w')
+                                                <a style="pointer-events:none" href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-suggest" rel="{{$x-1}}:{{$y-1}}">
+                                                    <div style="position:relative;background-color:transparent;border-color:black;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="H" rel="{{$x-1}}:{{$y-1}}"></div>
+                                                </a>
+                                            @else
+                                                <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-suggest" rel="{{$x-1}}:{{$y-1}}">
+                                                    <div style="position:relative;background-color:transparent;border-color:black;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="H" rel="{{$x-1}}:{{$y-1}}"></div>
+                                                </a>
+                                            @endif
                                         </td>
                                     @elseif($boardContent[$y-1][$x-1] == 'p')
                                         <td>
-                                            <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
-                                                <div style="position:relative;background-color:transparent;border-color:white;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="P" rel="{{$x-1}}:{{$y-1}}"></div>
-                                            </a>
+                                            @if($mode == 'pvai' && $turnInPlay == 'w')
+                                                <a style="pointer-events:none" href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-suggest" rel="{{$x-1}}:{{$y-1}}">
+                                                    <div style="position:relative;background-color:transparent;border-color:white;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="P" rel="{{$x-1}}:{{$y-1}}"></div>
+                                                </a>
+                                            @else
+                                                <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-suggest" rel="{{$x-1}}:{{$y-1}}">
+                                                    <div style="position:relative;background-color:transparent;border-color:white;border-style:solid;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="P" rel="{{$x-1}}:{{$y-1}}"></div>
+                                                </a>
+                                            @endif
                                         </td>
                                     @else
                                         <td>
+                                        @if($mode == 'pvai' && $turnInPlay == 'w')
+                                            <a style="pointer-events:none" href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
+                                                <div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div>
+                                            </a>
+                                        @else
                                             <a href="?x={{$x-1}}&y={{$y-1}}&turn={{$turnInPlay}}&board={{$boardContentAfterTurn}}" class="coin-empty-href" rel="{{$x-1}}:{{$y-1}}">
                                                 <div style="position:relative;background-color:transparent;width:50px;height:50px;border-radius:50%;" class="coin-empty" alt="W" rel="{{$x-1}}:{{$y-1}}"></div>
                                             </a>
+                                        @endif
                                         </td>
                                     @endif
                                 @endfor
@@ -121,7 +140,9 @@
 
                 <!-- Stats and warning condition -->
                 <!-- If there is still coin or empty coin not equal to zero -->
-                @if($calculateScore['empty']!=0 && !($calculateScore['black'] == 0 || $calculateScore['white'] == 0) && $totalSuggestedMove != 0)
+                {{$totalSuggestedMoveEnemy}}
+                {{$totalSuggestedMove}}
+                @if($calculateScore['empty']!=0 && !($calculateScore['black'] == 0 || $calculateScore['white'] == 0) && ($totalSuggestedMove != 0 || $totalSuggestedMoveEnemy != 0))
                     <!-- If black or white coin's goes to zero  -->
                     @if($countCoinFlippid == 0)
                         @if(isset($_GET['x']) && !($isPass))
@@ -134,10 +155,19 @@
                         @else
                         &nbsp;
                         @endif
+                        
                     @elseif($countCoinFlippid == 1)
                     <h3>Great! {{$countCoinFlippid}} coin flipped!</h3>
                     @else
                     <h3>Great! {{$countCoinFlippid}} coins are flipped!</h3>
+                    @endif
+                    @if($turnInPlay == 'w' && $mode == 'pvai' && $totalSuggestedMoveEnemy > 0)
+                        <h3>
+                            <div class="error">
+                                <p>Computer have no turn to move</p>
+                                <p><a id="pass-button" href="/game/?isPass=true&x=<?php echo (int)$_GET['x']; ?>&y=<?php echo (int)$_GET['y']; ?>&turn=b&board=<?php echo htmlentities($_GET['board']); ?>">click here</href> to continue your turn</p>
+                            </div>
+                        </h3>
                     @endif
                 <!-- If empty coin goes to zero -->
                 @else
@@ -152,4 +182,22 @@
             </div>
         </div>
     </body>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var coinSuggested = []
+            $(".coin-empty-suggest").map(function() {
+                coinSuggested.push($(this).attr('href'));
+                console.log($(this).attr('href'));
+            }).get();
+            const random = Math.floor(Math.random() * coinSuggested.length);
+            console.log(random, coinSuggested[random]);
+            if(mode == 'pvai' && turnInPlay == 'w' && coinSuggested.length > 0){
+                setTimeout(() => {
+                    window.location.href = coinSuggested[random]
+                }, 1000);
+            }
+            console.log(mode);
+            console.log(turnInPlay);
+        })
+    </script>
 </html>
